@@ -2,28 +2,67 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Welcome Video</title>
+  <title>LIH Signage Roombo</title>
   <style>
     body {
       margin: 0;
+      overflow: hidden
       background-color: #000;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
     }
+    #video-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+    }
     iframe {
       width: 100%;
       height: 100%;
       border: none;
     }
+    #metrics-overlay {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 2;
+      font-family: Arial, sans-serif;
+      background-color: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 16px;
+      border-radius: 8px;
+      max-width: 300px;
+    }
   </style>
 </head>
 <body>
-  <iframe 
+  <div>  
+    <iframe 
     src="https://www.youtube.com/embed/7OmqV2d-7gY?autoplay=1&mute=1&controls=0&loop=1&playlist=7OmqV2d-7gY" 
     allow="autoplay; encrypted-media" 
     allowfullscreen>
-  </iframe>
+    </iframe>
+  </div>
+    <div id="metrics-overlay">
+    <h3>Room Metrics</h3>
+    <p>Occupancy: <span id="occupancy">--</span></p>
+    <p>Temperature: <span id="temperature">--</span> °C</p>
+    <p>Humidity: <span id="humidity">--</span>%</p>
+  </div>
+  <script>
+    // Simulated data feed — replace with macro/xAPI integration
+    function updateMetrics() {
+      document.getElementById('occupancy').textContent = Math.floor(Math.random() * 10);
+      document.getElementById('temperature').textContent = (20 + Math.random() * 5).toFixed(1);
+      document.getElementById('humidity').textContent = (40 + Math.random() * 20).toFixed(0);
+    }
+
+    setInterval(updateMetrics, 5000); // Refresh every 5 seconds
+  </script>
 </body>
 </html>
