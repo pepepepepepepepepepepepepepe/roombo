@@ -9,42 +9,17 @@
       padding: 0;
       overflow: hidden;
       background-color: #000;
+      height: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100%;
     }
-    #video-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 1;
-    }
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      display: block;
-    }
-    #metrics-overlay {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      z-index: 2;
-      font-family: Arial, sans-serif;
-      background-color: rgba(0, 0, 0, 0.6);
-      color: white;
-      padding: 16px;
-      border-radius: 8px;
-      max-width: 300px;
-    }
+
     .video-wrapper {
       position: relative;
       width: 100%;
       height: 0;
-      padding-bottom: 56.25%; /* 16:9 aspect ratio */
+      padding-bottom: 56.25%; /* 16:9 */
     }
     .video-wrapper iframe {
       position: absolute;
@@ -52,32 +27,109 @@
       left: 0;
       width: 100%;
       height: 100%;
+      border: none;
+    }
+
+    /* Header container for the three metric cards */
+    #metrics-header {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 16px;
+      z-index: 2;
+    }
+
+    /* Individual metric card */
+    .metric-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 16px;
+      background-color: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      min-width: 80px;
+    }
+    .metric-title {
+      font-size: 12px;
+      color: #ccc;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .metric-value {
+      font-size: 20px;
+      color: #fff;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <div class="video-wrapper">  
     <iframe 
-    src="https://www.youtube.com/embed/7OmqV2d-7gY?autoplay=1&mute=1&controls=0&loop=1&playlist=7OmqV2d-7gY" 
-    allow="autoplay; encrypted-media" 
-    allowfullscreen>
+      src="https://www.youtube.com/embed/7OmqV2d-7gY?autoplay=1&mute=1&controls=0&loop=1&playlist=7OmqV2d-7gY"
+      allow="autoplay; encrypted-media"
+      allowfullscreen>
     </iframe>
   </div>
-    <div id="metrics-overlay">
-    <h3>Room Metrics</h3>
-    <p>Occupancy: <span id="occupancy">--</span></p>
-    <p>Temperature: <span id="temperature">--</span> °C</p>
-    <p>Humidity: <span id="humidity">--</span>%</p>
-  </div>
-  <script>
-    // Simulated data feed — replace with macro/xAPI integration
-    function updateMetrics() {
-      document.getElementById('occupancy').textContent = Math.floor(Math.random() * 10);
-      document.getElementById('temperature').textContent = (20 + Math.random() * 5).toFixed(1);
-      document.getElementById('humidity').textContent = (40 + Math.random() * 20).toFixed(0);
-    }
 
-    setInterval(updateMetrics, 5000); // Refresh every 5 seconds
+  <div id="metrics-header">
+    <div class="metric-card">
+      <div class="metric-title">Air Quality Index</div>
+      <div class="metric-value" id="aqi">--</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-title">Temperature</div>
+      <div class="metric-value" id="temperature">--</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-title">Humidity</div>
+      <div class="metric-value" id="humidity">--</div>
+    </div>
+  </div>
+
+  <script>
+    const ws = new WebSocket('ws://10.102.1.26:8080');
+
+    ws.addEventListener('open', () => {
+      console.log('WebSocket connected');
+    });
+
+    ws.addEventListener('message', ({ data }) => {
+      try {
+        const payload = JSON.parse(data);
+        const stats = payload.roomAnalytics || {};
+
+        // Air Quality Index
+        document.getElementById('aqi').textContent =
+          stats.airQualityIndex != null
+            ? stats.airQualityIndex
+            : '--';
+
+        // Ambient Temperature (°C)
+        document.getElementById('temperature').textContent =
+          stats.ambientTemperature != null
+            ? stats.ambientTemperature.toFixed(1) + '°C'
+            : '--';
+
+        // Relative Humidity (%)
+        document.getElementById('humidity').textContent =
+          stats.relativeHumidity != null
+            ? stats.relativeHumidity + '%'
+            : '--';
+      }
+      catch (err) {
+        console.error('WS parse error:', err);
+      }
+    });
+
+    ws.addEventListener('close', () => {
+      console.warn('WebSocket closed – retrying in 5s');
+      setTimeout(() => location.reload(), 5000);
+    });
   </script>
 </body>
 </html>

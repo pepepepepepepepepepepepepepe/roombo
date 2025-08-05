@@ -1,0 +1,25 @@
+{
+  "name": "roombohalfwake",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pepepepepepepepepepepepepepe/roomboHalfWake.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pepepepepepepepepepepepepepe/roomboHalfWake/issues"
+  },
+  "homepage": "https://github.com/pepepepepepepepepepepepepepe/roomboHalfWake#readme",
+  "dependencies": {
+    "express": "^5.1.0",
+    "ws": "^8.18.3"
+  }
+}
