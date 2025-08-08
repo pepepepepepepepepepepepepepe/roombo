@@ -1,38 +1,70 @@
-// server.js
+const fs        = require('fs');
 const express   = require('express');
-const http      = require('http');
+const https     = require('https');
+const http = require('http');
 const WebSocket = require('ws');
+const path      = require('path');
+const cors = require('cors');
 
-const app    = express();
+const app = express();
+
+app.use(cors());
+// Serve static files from the "public" folder
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Load SSL certificate and key
+const sslOptions = {
+  key:  fs.readFileSync(path.join(__dirname, 'certs', 'server.key')),
+  cert: fs.readFileSync(path.join(__dirname, 'certs', 'server.crt'))
+};
+
+// Create HTTPS server
+//const server = https.createServer(sslOptions, app);
+
+// Create HTTP Server
 const server = http.createServer(app);
-const wss    = new WebSocket.Server({ server });
+server.listen(8080);
+
+// Create WebSocket server on top of HTTPS
+const wss = new WebSocket.Server({ server });
 
 // Let Express parse JSON bodies
 app.use(express.json());
 
-// 1) HTTP endpoint for your RoomOS macro
+// Store latest metrics
+let latestMetrics = null;
+
+// Unified POST handler for RoomOS macro
 app.post('/metrics', (req, res) => {
-  const payload = req.body;              // { roomAnalytics:…, timestamp:… }
+  const payload = req.body;
   console.log('HTTP /metrics got →', payload);
 
-  // 2) Broadcast it to all open WebSocket clients
+  // Save latest metrics
+  latestMetrics = payload;
+
+  // Broadcast to all WebSocket clients
   wss.clients.forEach(ws => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(payload));
     }
   });
 
-  // 3) Reply 200 OK so the macro sees “POST successful”
+  // Reply 200 OK
   res.sendStatus(200);
 });
 
-// 4) Log new WS connections
+// GET endpoint for polling clients
+app.get('/latest-metrics', (req, res) => {
+  res.json(latestMetrics || {});
+});
+
+// Log WebSocket connections
 wss.on('connection', ws => {
   console.log('⚡️ signage client connected via WebSocket');
   ws.on('close', () => console.log('signage client disconnected'));
 });
 
-// 5) Start HTTP+WS on port 8080
-server.listen(8080, () => {
-  console.log('Listening on http://0.0.0.0:8080 (and WS on same port)');
-});
+// Start HTTPS+WS on port 8443
+//server.listen(8443, () => {
+//  console.log('Listening on https://0.0.0.0:8443 (and WS on same port)');
+//});

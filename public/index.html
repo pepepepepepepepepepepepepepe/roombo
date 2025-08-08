@@ -13,6 +13,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      flex-direction: column;
     }
 
     .video-wrapper {
@@ -30,7 +31,6 @@
       border: none;
     }
 
-    /* Header container for the three metric cards */
     #metrics-header {
       position: fixed;
       top: 20px;
@@ -41,7 +41,6 @@
       z-index: 2;
     }
 
-    /* Individual metric card */
     .metric-card {
       display: flex;
       flex-direction: column;
@@ -53,6 +52,7 @@
       border-radius: 8px;
       min-width: 80px;
     }
+
     .metric-title {
       font-size: 12px;
       color: #ccc;
@@ -60,10 +60,21 @@
       letter-spacing: 1px;
       margin-bottom: 4px;
     }
+
     .metric-value {
       font-size: 20px;
       color: #fff;
       font-weight: bold;
+    }
+
+    #timestamp {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: #aaa;
+      font-family: sans-serif;
     }
   </style>
 </head>
@@ -91,45 +102,46 @@
     </div>
   </div>
 
+  <div id="timestamp">Last updated: --</div>
+
   <script>
-    const ws = new WebSocket('ws://10.102.1.26:8080');
+    const SERVER_IP = '10.102.1.51';
+    const SERVER_PORT = '8080';
+    const BASE_URL = `http://${SERVER_IP}:${SERVER_PORT}`;
 
-    ws.addEventListener('open', () => {
-      console.log('WebSocket connected');
-    });
+    function updateMetrics(payload) {
+      const stats = payload.roomAnalytics || {};
 
-    ws.addEventListener('message', ({ data }) => {
+      document.getElementById('aqi').textContent =
+        stats.airQualityIndex != null ? stats.airQualityIndex : '--';
+
+      document.getElementById('temperature').textContent =
+        stats.ambientTemperature != null ? stats.ambientTemperature.toFixed(1) + '°C' : '--';
+
+      document.getElementById('humidity').textContent =
+        stats.relativeHumidity != null ? stats.relativeHumidity + '%' : '--';
+
+      document.getElementById('timestamp').textContent =
+        'Last updated: ' + new Date().toLocaleTimeString();
+    }
+
+    async function fetchMetrics() {
       try {
-        const payload = JSON.parse(data);
-        const stats = payload.roomAnalytics || {};
-
-        // Air Quality Index
-        document.getElementById('aqi').textContent =
-          stats.airQualityIndex != null
-            ? stats.airQualityIndex
-            : '--';
-
-        // Ambient Temperature (°C)
-        document.getElementById('temperature').textContent =
-          stats.ambientTemperature != null
-            ? stats.ambientTemperature.toFixed(1) + '°C'
-            : '--';
-
-        // Relative Humidity (%)
-        document.getElementById('humidity').textContent =
-          stats.relativeHumidity != null
-            ? stats.relativeHumidity + '%'
-            : '--';
+        const res = await fetch(`${BASE_URL}/latest-metrics`);
+        const payload = await res.json();
+        updateMetrics(payload);
+      } catch (err) {
+        console.error('Polling failed:', err);
       }
-      catch (err) {
-        console.error('WS parse error:', err);
-      }
-    });
+    }
 
-    ws.addEventListener('close', () => {
-      console.warn('WebSocket closed – retrying in 5s');
-      setTimeout(() => location.reload(), 5000);
-    });
+    function startPolling() {
+      fetchMetrics(); // initial fetch
+      setInterval(fetchMetrics, 10000); // every 10 seconds
+    }
+
+    // Start polling only
+    startPolling();
   </script>
 </body>
 </html>
